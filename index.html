@@ -660,7 +660,8 @@ function buildWindow() {
   SHEET_DATES.forEach(function(s){ SL[s.date]=s.raw; });
   SF    = SHEET_DATES[0].date;
   SLast = SHEET_DATES[SHEET_DATES.length-1].date;
-  TODAY = toDS(new Date());
+  var _now = new Date(); _now.setDate(_now.getDate()+1);
+  TODAY = toDS(_now);  /* PDD = 내일 날짜 */
 
   /* 오늘이 속한 주의 일요일(dow=0)을 구함 */
   var todayDate = new Date(TODAY+"T00:00:00");
@@ -836,7 +837,7 @@ function buildWHead(days, wCls, label) {
       "<span class=\"dnum\">"+parseInt(wd.ds.split("-")[2])+"</span>"+
       "<span class=\"dday "+dc+"\">"+wd.dn+"</span>"+
       (wd.peak?"<span class=\"dpk\">PEAK</span>":"")+
-      (wd.isToday?"<span class=\"dtd\">TODAY</span>":"")+
+      (wd.isToday?"<span class=\"dtd\">PDD</span>":"")+
     "</th>";
   });
   return h+"</tr>";
@@ -876,7 +877,7 @@ function buildMobileCards(drivers) {
         g += "<div class=\"day-cell"+tod+"\">"+
           "<span class=\"dc-dnum "+dc+"\">"+parseInt(wd.ds.split("-")[2])+"</span>"+
           "<span class=\"dc-dday "+dc+"\">"+wd.dn+"</span>"+
-          (wd.isToday?"<span class=\"dc-today-badge\">TODAY</span>":"")+
+          (wd.isToday?"<span class=\"dc-today-badge\">PDD</span>":"")+
           "<span class=\"dc-chip\">"+c+"</span>"+
           "</div>";
       });
@@ -922,7 +923,7 @@ function showCamp(camp) {
   else           { nb.style.display="none"; }
 
   var dow = KD[new Date(TODAY+"T00:00:00").getDay()];
-  document.getElementById("cp-today").textContent = "오늘 "+TODAY+" ("+dow+")";
+  document.getElementById("cp-today").textContent = "PDD "+TODAY+" ("+dow+")";
   var wc = drivers.filter(function(d){ return isWork(d.schedule[TODAY]||""); }).length;
   var oc = drivers.length - wc;
   document.getElementById("cp-chips").innerHTML =
