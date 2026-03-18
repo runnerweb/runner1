@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>배송기사 스케줄</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+/* ── 공통 변수 ── */
+:root {
+  --bg:       #f0f4f9;
+  --surface:  #ffffff;
+  --surface2: #e8eef6;
+  --border:   #d0dae8;
+  --accent:   #2563eb;
+  --acc-soft: rgba(37,99,235,.09);
+  --green:    #16a34a;
+  --gs:       rgba(22,163,74,.1);
+  --red:      #dc2626;
+  --rs:       rgba(220,38,38,.1);
+  --orange:   #ea580c;
+  --os:       rgba(234,88,12,.1);
+  --yellow:   #92400e;
+  --text:     #1e293b;
+  --text2:    #475569;
+  --text3:    #94a3b8;
+  --text4:    #cbd5e1;
+  --theadbg: #dce6f2;
+  --w1bg:    rgba(234,88,12,.04);
+  --w2bg:    rgba(37,99,235,.04);
+  --todbg:   rgba(37,99,235,.09);
+  --todbd:   rgba(37,99,235,.35);
+  --shadow:  0 1px 4px rgba(0,0,0,.07);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Noto Sans KR", sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── 페이지 전환 ── */
+.page { display: none; }
+.page.on { display: block; }
+
+/* ════════════════════════
+   INDEX
+════════════════════════ */
+.hero {
+  padding: 48px 20px 32px;
+  text-align: center;
+  background: radial-gradient(ellipse 80% 55% at 50% 0%,
+    rgba(37,99,235,.1) 0%, transparent 70%);
+  border-bottom: 1px solid var(--border);
+}
+.hero-icon {
+  font-size: 48px; display: block; margin-bottom: 14px;
+  filter: drop-shadow(0 0 20px rgba(37,99,235,.4));
+}
+.hero h1 {
+  font-size: 22px; font-weight: 900; letter-spacing: -.5px;
+  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-sub {
+  margin-top: 6px; font-size: 12px; color: var(--text2);
+  font-family: "JetBrains Mono", monospace;
+}
+.hero-badge {
+  display: inline-block; margin-top: 12px;
+  padding: 5px 16px;
+  background: var(--acc-soft); border: 1px solid rgba(37,99,235,.25);
+  border-radius: 20px; font-size: 11px; color: var(--accent);
+  font-family: "JetBrains Mono", monospace;
+}
+
+/* 캠프 카드 그리드 */
+.idx-grid {
+  max-width: 860px; margin: 28px auto 48px;
+  padding: 0 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.camp-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 18px 18px 16px;
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: all .18s; box-shadow: var(--shadow);
+}
+.camp-card::after {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  opacity: 0; transition: opacity .18s;
+}
+.camp-card:hover, .camp-card:active {
+  border-color: rgba(37,99,235,.3); background: var(--surface2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.1), 0 0 0 1px rgba(37,99,235,.12);
+}
+.camp-card:hover::after { opacity: 1; }
+.card-name {
+  font-size: 15px; font-weight: 700;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 6px var(--accent);
+  flex-shrink: 0;
+}
+.card-arrow {
+  position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+  font-size: 16px; color: var(--text3); transition: all .18s;
+}
+.camp-card:hover .card-arrow { color: var(--accent); transform: translateY(-50%) translateX(3px); }
+.copy-link-btn {
+  margin-top: 10px; width: 100%;
+  background: var(--acc-soft); border: 1px solid rgba(37,99,235,.25);
+  border-radius: 8px; padding: 6px 10px;
+  color: var(--accent); font-size: 11px; font-weight: 600;
+  cursor: pointer; font-family: "Noto Sans KR", sans-serif;
+  transition: all .15s; text-align: center;
+}
+.copy-link-btn:hover { background: rgba(37,99,235,.15); border-color: var(--accent); }
+
+/* 백업 카드 */
+.camp-card.backup-card {
+  border-color: rgba(234,88,12,.25);
+  background: rgba(234,88,12,.03);
+}
+.camp-card.backup-card::after {
+  background: linear-gradient(90deg, var(--orange), transparent);
+}
+.camp-card.backup-card:hover {
+  border-color: rgba(234,88,12,.45);
+  background: rgba(234,88,12,.06);
+  box-shadow: 0 6px 20px rgba(0,0,0,.1), 0 0 0 1px rgba(234,88,12,.2);
+}
+.camp-card.backup-card .card-dot {
+  background: var(--orange); box-shadow: 0 0 6px var(--orange);
+}
+.camp-card.backup-card .copy-link-btn {
+  background: var(--os); border-color: rgba(234,88,12,.25); color: var(--orange);
+}
+.camp-card.backup-card .copy-link-btn:hover {
+  background: rgba(234,88,12,.15); border-color: var(--orange);
+}
+.backup-dispatch {
+  margin-top: 10px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.backup-dispatch-title {
+  font-size: 10px; color: var(--text3); font-weight: 600;
+  letter-spacing: .4px; text-transform: uppercase;
+}
+.backup-driver-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 7px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; font-size: 11px;
+}
+.backup-driver-row.bdr-work {
+  border-color: rgba(22,163,74,.2); background: rgba(22,163,74,.05);
+}
+.backup-driver-row.bdr-off {
+  opacity: .55;
+}
+.bdr-name { font-weight: 600; flex-shrink: 0; }
+.bdr-route {
+  font-family: "JetBrains Mono", monospace; font-size: 10px;
+  color: var(--orange); font-weight: 600;
+  flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.bdr-status { flex-shrink: 0; }
+.card-stats {
+  margin-top: 12px; display: flex; gap: 8px;
+}
+.cstat {
+  flex: 1; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 6px; text-align: center;
+}
+.cstat .n {
+  font-size: 18px; font-weight: 700;
+  font-family: "JetBrains Mono", monospace;
+}
+.cstat .l { font-size: 10px; color: var(--text2); margin-top: 1px; }
+.cstat.wk .n { color: var(--green); }
+.cstat.of .n { color: var(--red); }
+.cstat.tt .n { color: var(--text); }
+
+/* ════════════════════════
+   CAMP PAGE — topbar
+════════════════════════ */
+.topbar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 0 16px;
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-r1 {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 0; flex-wrap: nowrap;
+}
+.back-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 12px;
+  color: var(--text2); font-size: 12px; cursor: pointer;
+  transition: all .15s; font-family: "Noto Sans KR", sans-serif;
+  white-space: nowrap; outline: none; flex-shrink: 0;
+}
+body.camp-only .back-btn { display: none; }
+.back-btn:hover { color: var(--text); border-color: var(--accent); background: var(--acc-soft); }
+.topbar-center { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+.topbar-icon {
+  width: 30px; height: 30px; border-radius: 7px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent), #1d4ed8);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; box-shadow: 0 0 10px rgba(37,99,235,.3);
+}
+.topbar-center h2 {
+  font-size: 14px; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.search-box { position: relative; }
+.search-box input {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 10px 6px 28px;
+  color: var(--text); font-size: 12px;
+  font-family: "Noto Sans KR", sans-serif;
+  width: 130px; outline: none; transition: all .18s;
+}
+.search-box input:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  width: 150px;
+}
+.search-box::before {
+  content: "🔍"; position: absolute; left: 8px; top: 50%;
+  transform: translateY(-50%); font-size: 10px; opacity: .5; pointer-events: none;
+}
+.count-badge {
+  background: var(--acc-soft); border: 1px solid rgba(37,99,235,.25);
+  border-radius: 20px; padding: 3px 10px; font-size: 10px;
+  color: var(--accent); font-family: "JetBrains Mono", monospace;
+  white-space: nowrap;
+}
+.topbar-r2 {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-top: 1px solid var(--border); flex-wrap: wrap;
+}
+.today-lbl { font-size: 10px; color: var(--text2); font-family: "JetBrains Mono", monospace; }
+.tchip-wrap { display: flex; gap: 5px; }
+.tchip {
+  padding: 2px 9px; border-radius: 20px;
+  font-size: 10px; font-weight: 600; white-space: nowrap;
+}
+.tchip.wk { background: var(--gs); color: var(--green); border: 1px solid rgba(22,163,74,.22); }
+.tchip.of { background: var(--rs); color: var(--red);   border: 1px solid rgba(220,38,38,.18); }
+
+/* notice */
+.notice-bar {
+  background: var(--os); border: 1px solid rgba(234,88,12,.25);
+  border-radius: 8px; padding: 8px 14px;
+  margin: 8px 16px; font-size: 11px; color: var(--orange);
+}
+
+/* legend */
+.legend {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin: 8px 16px; padding: 7px 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+}
+.legend-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text2); }
+
+/* ════════════════════════
+   주차 구분 헤더
+════════════════════════ */
+.week-label {
+  display: flex; align-items: center; gap: 8px;
+  margin: 14px 16px 6px;
+}
+.week-label .wk-badge {
+  font-size: 12px; font-weight: 700;
+  padding: 3px 12px; border-radius: 20px;
+}
+.week-label .wk-badge.w1 { background: var(--os); color: var(--orange); border: 1px solid rgba(234,88,12,.25); }
+.week-label .wk-badge.w2 { background: var(--acc-soft); color: var(--accent); border: 1px solid rgba(37,99,235,.25); }
+.week-label .wk-range { font-size: 11px; color: var(--text2); font-family: "JetBrains Mono", monospace; }
+
+/* ════════════════════════
+   데스크톱 테이블 뷰  (>768px)
+════════════════════════ */
+.tbl-outer {
+  padding: 0 16px 32px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.tbl-scroll {
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.tbl-scroll table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: max-content;
+  min-width: 100%;
+}
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--theadbg);
+}
+th {
+  padding: 8px 6px; text-align: left;
+  font-size: 11px; font-weight: 600; letter-spacing: .3px;
+  color: var(--text2); border-bottom: 1px solid var(--border);
+  white-space: nowrap; background: var(--theadbg);
+}
+th.dcol { text-align: center; }
+th.w1h  { background: rgba(234,88,12,.07) !important; color: var(--orange); }
+th.w2h  { background: rgba(37,99,235,.07) !important; color: var(--accent); }
+th.toh  {
+  background: rgba(37,99,235,.15) !important; color: var(--accent) !important;
+  border-top: 2px solid var(--accent);
+}
+.dnum { display: block; font-size: 15px; font-weight: 700; font-family: "JetBrains Mono", monospace; line-height: 1; }
+.dday { display: block; font-size: 10px; margin-top: 1px; }
+.dpk  { display: block; font-size: 8px; color: var(--orange); margin-top: 1px; letter-spacing: .5px; }
+.dtd  {
+  display: inline-block; background: var(--accent); color: #fff;
+  font-size: 7px; font-weight: 700; padding: 1px 4px; border-radius: 3px;
+  font-family: "JetBrains Mono", monospace; letter-spacing: .5px; margin-top: 2px;
+}
+.sun { color: #ef4444; } .sat { color: #3b82f6; } .wdy { color: var(--text2); }
+
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+tbody tr:hover { background: rgba(37,99,235,.04); }
+tbody tr.hid { display: none; }
+td { padding: 8px 5px; vertical-align: top; }
+td.nc { font-size: 12px; font-weight: 600; }
+td.nc .sub { font-size: 9px; color: var(--text3); font-family: "JetBrains Mono", monospace; margin-top: 1px; }
+td.rc { font-size: 10px; font-family: "JetBrains Mono", monospace; color: var(--yellow); font-weight: 700; }
+td.sc { text-align: center; padding: 5px 3px; vertical-align: middle; }
+td.sc.w1  { background: var(--w1bg); }
+td.sc.w2  { background: var(--w2bg); }
+td.sc.tod { background: var(--todbg); border-left: 1px solid var(--todbd); border-right: 1px solid var(--todbd); }
+td.sc.w1:last-child, td.sc.w1:nth-child(9) { border-right: 2px solid var(--border); }
+
+/* ════════════════════════
+   칩
+════════════════════════ */
+.chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 4px; padding: 3px 5px;
+  font-size: 9px; font-weight: 600;
+  min-width: 38px; line-height: 1.4; text-align: center;
+  word-break: break-all; white-space: normal;
+  max-width: 88px;
+}
+.cw { background: var(--gs); color: var(--green); border: 1px solid rgba(22,163,74,.22); }
+.co { background: var(--rs); color: var(--red);   border: 1px solid rgba(220,38,38,.18); opacity: .8; }
+.cf { background: var(--rs); color: var(--red); border: 1px solid rgba(220,38,38,.18); opacity: .8; }
+.cr { background: var(--os); color: var(--orange); border: 1px solid rgba(234,88,12,.22); font-size: 8px; min-width: 0; }
+.cv { background: rgba(59,130,246,.1); color: #2563eb; border: 1px solid rgba(59,130,246,.22); }
+.cs { background: rgba(236,72,153,.1); color: #db2777; border: 1px solid rgba(236,72,153,.22); }
+.ce { color: var(--text4); font-size: 8px; min-width: 0; }
+.cn { color: var(--text4); opacity: .3; font-size: 8px; min-width: 0; }
+.empty-r td { text-align: center; padding: 40px; color: var(--text2); font-size: 13px; }
+
+/* ════════════════════════
+   모바일 카드 뷰  (≤768px)
+════════════════════════ */
+.mobile-list { display: none; padding: 0 12px 32px; }
+
+.driver-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; margin-bottom: 10px;
+  box-shadow: var(--shadow); overflow: hidden;
+}
+.driver-card.hid { display: none; }
+
+/* 기사 카드 헤더 */
+.dc-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer; /* 접기/펼치기 */
+  user-select: none;
+}
+.dc-avatar {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent), #1d4ed8);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 14px; font-weight: 700;
+}
+.dc-info { flex: 1; min-width: 0; }
+.dc-name { font-size: 14px; font-weight: 700; }
+.dc-sub  { font-size: 10px; color: var(--text2); font-family: "JetBrains Mono", monospace; margin-top: 1px; }
+.dc-route {
+  font-size: 10px; font-family: "JetBrains Mono", monospace;
+  color: var(--yellow); font-weight: 700;
+  background: rgba(146,64,14,.08); border: 1px solid rgba(146,64,14,.15);
+  border-radius: 6px; padding: 3px 8px; flex-shrink: 0;
+}
+.dc-today {
+  flex-shrink: 0;
+}
+.dc-chevron {
+  font-size: 12px; color: var(--text3); flex-shrink: 0;
+  transition: transform .2s;
+}
+.driver-card.collapsed .dc-chevron { transform: rotate(-90deg); }
+
+/* 날짜 그리드 */
+.dc-body { padding: 10px 14px 12px; }
+.driver-card.collapsed .dc-body { display: none; }
+
+.week-grid-label {
+  font-size: 10px; font-weight: 700; margin-bottom: 6px;
+  padding: 2px 8px; border-radius: 4px; display: inline-block;
+}
+.wgl-w1 { background: var(--os); color: var(--orange); }
+.wgl-w2 { background: var(--acc-soft); color: var(--accent); margin-top: 10px; }
+
+.day-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 2px;
+}
+.day-cell {
+  display: flex; flex-direction: column; align-items: center;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 5px 2px;
+  min-height: 58px;
+}
+.day-cell.today-cell {
+  background: var(--todbg);
+  border-color: var(--todbd);
+  border-width: 1.5px;
+}
+.dc-dnum { font-size: 13px; font-weight: 700; font-family: "JetBrains Mono", monospace; line-height: 1; }
+.dc-dday { font-size: 9px; margin-top: 1px; }
+.dc-today-badge {
+  font-size: 7px; font-weight: 700; background: var(--accent); color: #fff;
+  border-radius: 3px; padding: 0 3px; margin-top: 1px;
+}
+.dc-chip { margin-top: 4px; }
+.dc-chip .chip { font-size: 8px; padding: 2px 3px; min-width: 0; }
+
+@media (max-width: 768px) {
+  .tbl-outer  { display: none; }
+  .mobile-list { display: block; }
+  .week-label { display: none; }  /* 모바일에선 카드 안에 표시 */
+
+  /* index grid 단열 */
+  .idx-grid { grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 12px; }
+  .card-arrow { display: none; }
+  .hero { padding: 36px 16px 24px; }
+  .hero h1 { font-size: 20px; }
+}
+
+@media (max-width: 400px) {
+  .idx-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════ INDEX PAGE ════ -->
+<div id="pg-index" class="page on">
+  <div class="hero">
+    <span class="hero-icon">🚚</span>
+    <h1>배송기사 스케줄</h1>
+    <p class="hero-sub">캠프를 선택하면 스케줄을 확인할 수 있습니다</p>
+    <span class="hero-badge" id="idx-range">—</span>
+  </div>
+  <div class="idx-grid" id="idx-grid"></div>
+</div>
+
+<!-- ════ CAMP PAGE ════ -->
+<div id="pg-camp" class="page">
+  <div class="topbar">
+    <div class="topbar-r1">
+      <button class="back-btn" id="btn-back">← 목록</button>
+      <div class="topbar-center">
+        <div class="topbar-icon">📦</div>
+        <h2 id="cp-title">—</h2>
+      </div>
+      <div class="topbar-right">
+        <div class="search-box">
+          <input type="text" id="cp-search" placeholder="이름/아이디">
+        </div>
+        <span class="count-badge" id="cp-count">—</span>
+      </div>
+    </div>
+    <div class="topbar-r2">
+      <span class="today-lbl" id="cp-today">—</span>
+      <div class="tchip-wrap" id="cp-chips"></div>
+    </div>
+  </div>
+
+  <div id="cp-notice" style="display:none" class="notice-bar"></div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="chip cw" style="min-width:0;padding:1px 6px">출근</span> 출근</div>
+    <div class="legend-item"><span class="chip cr" style="min-width:0;padding:1px 6px">노선</span> 노선배정</div>
+    <div class="legend-item"><span class="chip co" style="min-width:0;padding:1px 6px">휴무</span> 휴무</div>
+    <div class="legend-item"><span class="chip cf" style="min-width:0;padding:1px 6px">고정</span> 고정휴무</div>
+    <div class="legend-item"><span class="chip cv" style="min-width:0;padding:1px 6px">휴가</span> 휴가</div>
+  </div>
+
+  <!-- 데스크톱: 1주차 -->
+  <div class="week-label">
+    <span class="wk-badge w1" id="wl1-badge">🟠 1주차</span>
+    <span class="wk-range" id="wl1-range">—</span>
+  </div>
+  <div class="tbl-outer" id="tbl-w1">
+    <div class="tbl-scroll">
+      <table>
+        <thead id="cp-thead-w1"></thead>
+        <tbody id="cp-tbody-w1"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 데스크톱: 2주차 -->
+  <div class="week-label">
+    <span class="wk-badge w2" id="wl2-badge">🔵 2주차</span>
+    <span class="wk-range" id="wl2-range">—</span>
+  </div>
+  <div class="tbl-outer" id="tbl-w2">
+    <div class="tbl-scroll">
+      <table>
+        <thead id="cp-thead-w2"></thead>
+        <tbody id="cp-tbody-w2"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 모바일: 카드 리스트 -->
+  <div class="mobile-list" id="mobile-list"></div>
+</div>
+
+<script>
+
+/* ═══════════════════════════════════════
+   API 설정
+═══════════════════════════════════════ */
+var API_URL = "https://script.google.com/macros/s/AKfycbxOKF7DCFGZmZZClm1MTQIHiYo2nmqh6c0vosDuXA7fb7NahfT0kXI1iseKMbmncgFp/exec";
+
+/* ═══════════════════════════════════════
+   유틸
+═══════════════════════════════════════ */
+var KD = ["일","월","화","수","목","금","토"];
+
+function toDS(d) {
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function addD(s, n) {
+  var d = new Date(s+"T00:00:00"); d.setDate(d.getDate()+n); return toDS(d);
+}
+function fmt(s)  { var d=new Date(s+"T00:00:00"); return (d.getMonth()+1)+"/"+d.getDate(); }
+function fmtFull(s) {
+  var d=new Date(s+"T00:00:00");
+  return d.getFullYear()+"."+String(d.getMonth()+1).padStart(2,"0")+"."+String(d.getDate()).padStart(2,"0");
+}
+function isWork(v) {
+  if (!v||v==="") return false;
+  return !(v==="휴무"||v==="고정휴무"||v==="계획된 휴무"||
+           v.indexOf("휴가")>-1||v.indexOf("병가")>-1||
+           v.indexOf("퇴사")>-1||v.indexOf("용차")>-1);
+}
+function mkChip(v) {
+  if (!v||v===""||v==="None") return "<span class=\"chip ce\">—</span>";
+  if (v==="출근")              return "<span class=\"chip cw\">출근</span>";
+  if (v==="휴무"||v==="계획된 휴무") return "<span class=\"chip co\">"+v+"</span>";
+  if (v==="고정휴무")          return "<span class=\"chip cf\">고정휴무</span>";
+  if (v.indexOf("휴가")>-1)   return "<span class=\"chip cv\">"+v+"</span>";
+  if (v.indexOf("병가")>-1)   return "<span class=\"chip cs\">"+v+"</span>";
+  return "<span class=\"chip cr\">"+v+"</span>";
+}
+function getInitial(name) {
+  return name ? name.charAt(0) : "?";
+}
+
+/* ═══════════════════════════════════════
+   전역 상태 (API 로드 후 채워짐)
+═══════════════════════════════════════ */
+var SHEET_DATES = [];
+var DRIVERS     = [];
+var SL = {}, SF = "", SLast = "", TODAY = "";
+var winStart, noticeMsg = "";
+var WIN = [], W1 = [], W2 = [];
+var CAMPS = [], BY_CAMP = {};
+
+/* ═══════════════════════════════════════
+   로딩 / 에러 UI
+═══════════════════════════════════════ */
+/* 인덱스 페이지에 로딩 오버레이를 추가 */
+(function() {
+  var overlay = document.createElement("div");
+  overlay.id = "load-overlay";
+  overlay.style.cssText =
+    "position:fixed;inset:0;background:var(--bg);"+
+    "display:flex;flex-direction:column;align-items:center;justify-content:center;"+
+    "gap:18px;z-index:9999;";
+  overlay.innerHTML =
+    "<div style=\"width:44px;height:44px;border:3px solid var(--border);"+
+    "border-top-color:var(--accent);border-radius:50%;animation:_spin .8s linear infinite\"></div>"+
+    "<div style=\"text-align:center\">"+
+      "<div style=\"font-size:13px;color:var(--text2);font-family:JetBrains Mono,monospace\">스케줄 불러오는 중…</div>"+
+      "<div style=\"font-size:11px;color:var(--text3);margin-top:4px\">Google Sheets에서 최신 데이터를 가져오고 있습니다</div>"+
+    "</div>";
+  document.body.appendChild(overlay);
+
+  /* 스피너 애니메이션 */
+  var st = document.createElement("style");
+  st.textContent = "@keyframes _spin{to{transform:rotate(360deg)}}";
+  document.head.appendChild(st);
+})();
+
+function hideOverlay() {
+  var o = document.getElementById("load-overlay");
+  if (o) o.remove();
+}
+function showFatalError(msg) {
+  var o = document.getElementById("load-overlay");
+  if (o) {
+    o.innerHTML =
+      "<div style=\"font-size:36px\">⚠️</div>"+
+      "<div style=\"text-align:center;max-width:480px\">"+
+        "<div style=\"font-size:16px;font-weight:700;color:var(--red)\">데이터를 불러오지 못했습니다</div>"+
+        "<div style=\"font-size:12px;color:var(--text2);margin-top:8px;line-height:1.6\">"+msg+"</div>"+
+        "<button onclick=\"location.reload()\" style=\""+
+          "margin-top:16px;background:var(--accent);color:#fff;border:none;"+
+          "border-radius:8px;padding:9px 22px;font-size:13px;cursor:pointer;"+
+          "font-family:Noto Sans KR,sans-serif;font-weight:600\">다시 시도</button>"+
+      "</div>";
+  }
+}
+
+/* ═══════════════════════════════════════
+   날짜 윈도우 계산
+═══════════════════════════════════════ */
+function buildWindow() {
+  SL = {};
+  SHEET_DATES.forEach(function(s){ SL[s.date]=s.raw; });
+  SF    = SHEET_DATES[0].date;
+  SLast = SHEET_DATES[SHEET_DATES.length-1].date;
+  var _now = new Date(); _now.setDate(_now.getDate()+1);
+  TODAY = toDS(_now);  /* PDD = 내일 날짜 */
+
+  /* 오늘이 속한 주의 일요일(dow=0)을 구함 */
+  var todayDate = new Date(TODAY+"T00:00:00");
+  var dow0 = todayDate.getDay();          /* 0=일, 1=월 … 6=토 */
+  var thisSunday = toDS(new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate() - dow0));
+
+  noticeMsg = "";
+  /* 이번 주 일요일이 시트 범위 안에 있으면 그대로, 아니면 시트 첫날의 주 일요일로 대체 */
+  if (thisSunday >= SF && thisSunday <= SLast) {
+    winStart = thisSunday;
+  } else if (thisSunday < SF) {
+    /* 오늘이 시트 시작 전 — 시트 첫날이 속한 주 일요일 */
+    var sfDate = new Date(SF+"T00:00:00");
+    var sfDow  = sfDate.getDay();
+    winStart = toDS(new Date(sfDate.getFullYear(), sfDate.getMonth(), sfDate.getDate() - sfDow));
+    noticeMsg = "⚠️ 오늘("+TODAY+")은 스케줄 등록 전입니다. "+SF+"이 포함된 주부터 표시합니다.";
+  } else {
+    /* 오늘이 시트 종료 후 — 시트 마지막날이 속한 주 일요일 */
+    var slDate = new Date(SLast+"T00:00:00");
+    var slDow  = slDate.getDay();
+    var lastSunday = toDS(new Date(slDate.getFullYear(), slDate.getMonth(), slDate.getDate() - slDow));
+    winStart = lastSunday;
+    noticeMsg = "⚠️ 스케줄 기간이 종료됐습니다. 새 스케줄을 업로드해주세요.";
+  }
+
+  /* 일요일부터 14일(2주) */
+  WIN = [];
+  for (var i=0; i<14; i++) {
+    var ds  = addD(winStart, i);
+    var dow = new Date(ds+"T00:00:00").getDay();
+    WIN.push({ ds:ds, dow:dow, dn:KD[dow],
+               peak:SL[ds]&&SL[ds].indexOf("Peak")>-1,
+               inSheet:!!SL[ds], isToday:ds===TODAY });
+  }
+  W1 = WIN.slice(0,7);   /* 1주차: 일~토 */
+  W2 = WIN.slice(7);     /* 2주차: 일~토 */
+}
+
+/* ═══════════════════════════════════════
+   캠프 맵 구성
+═══════════════════════════════════════ */
+function buildCampMap() {
+  CAMPS = []; BY_CAMP = {};
+  DRIVERS.forEach(function(d) {
+    if (!BY_CAMP[d.camp]) { BY_CAMP[d.camp]=[]; CAMPS.push(d.camp); }
+    BY_CAMP[d.camp].push(d);
+  });
+}
+
+/* ═══════════════════════════════════════
+   API 호출
+═══════════════════════════════════════ */
+function loadFromAPI() {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", API_URL, true);
+  xhr.timeout = 30000;
+
+  xhr.onload = function() {
+    if (xhr.status >= 200 && xhr.status < 300) {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        if (data.error) throw new Error(data.error);
+        SHEET_DATES = data.dates;
+        DRIVERS     = data.drivers;
+        buildWindow();
+        buildCampMap();
+        hideOverlay();
+        init();   /* 라우팅 시작 */
+      } catch(e) {
+        showFatalError("데이터 파싱 오류: " + e.message);
+      }
+    } else {
+      showFatalError("서버 오류 (HTTP " + xhr.status + ")");
+    }
+  };
+  xhr.onerror   = function() { showFatalError("네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요."); };
+  xhr.ontimeout = function() { showFatalError("요청 시간이 초과됐습니다. 잠시 후 다시 시도해주세요."); };
+  xhr.send();
+}
+
+/* 페이지 로드 시 API 호출 */
+loadFromAPI();
+
+/* ════════════════════════════════
+   PAGES
+════════════════════════════════ */
+var pgIndex = document.getElementById("pg-index");
+var pgCamp  = document.getElementById("pg-camp");
+
+/* ── INDEX ── */
+function showIndex() {
+  pgCamp.classList.remove("on");
+  pgIndex.classList.add("on");
+  document.title = "배송기사 스케줄";
+  document.getElementById("idx-range").textContent =
+    fmtFull(WIN[0].ds)+" ~ "+fmtFull(WIN[13].ds);
+
+  var grid = document.getElementById("idx-grid");
+  grid.innerHTML = "";
+  CAMPS.forEach(function(camp) {
+    var drivers = BY_CAMP[camp];
+    var wc = drivers.filter(function(d){ return isWork(d.schedule[TODAY]||""); }).length;
+    var oc = drivers.length - wc;
+    var card = document.createElement("div");
+    var campLink = location.href.split("#")[0] + "#" + encodeURIComponent(camp);
+    var isBackup = (camp === "백업");
+
+    card.className = "camp-card" + (isBackup ? " backup-card" : "");
+
+    var statsHtml =
+      "<div class=\"card-stats\">"+
+        "<div class=\"cstat tt\"><div class=\"n\">"+drivers.length+"</div><div class=\"l\">전체</div></div>"+
+        "<div class=\"cstat wk\"><div class=\"n\">"+wc+"</div><div class=\"l\">오늘출근</div></div>"+
+        "<div class=\"cstat of\"><div class=\"n\">"+oc+"</div><div class=\"l\">휴무</div></div>"+
+      "</div>";
+
+    /* 백업 카드 전용: 오늘 배치 기사 목록 */
+    var dispatchHtml = "";
+    if (isBackup) {
+      var rows = drivers.map(function(d) {
+        var val = d.schedule[TODAY] || "";
+        var working = isWork(val);
+        var rowCls = working ? "bdr-work" : "bdr-off";
+        var routeText = working ? val : (val || "휴무");
+        return "<div class=\"backup-driver-row "+rowCls+"\">"+
+          "<span class=\"bdr-name\">"+d.name+"</span>"+
+          "<span class=\"bdr-route\">"+routeText+"</span>"+
+          "<span class=\"bdr-status\">"+mkChip(val)+"</span>"+
+        "</div>";
+      }).join("");
+      dispatchHtml =
+        "<div class=\"backup-dispatch\">"+
+          "<div class=\"backup-dispatch-title\">오늘 배치현황</div>"+
+          rows+
+        "</div>";
+    }
+
+    card.innerHTML =
+      "<div class=\"card-name\"><span class=\"card-dot\"></span>"+(isBackup ? "🔄 "+camp : camp)+"</div>"+
+      statsHtml+
+      dispatchHtml+
+      "<button class=\"copy-link-btn\" data-link=\""+campLink+"\" onclick=\"event.stopPropagation();copyLink(this)\">🔗 링크복사</button>"+
+      (isBackup ? "" : "<span class=\"card-arrow\">→</span>");
+
+    (function(c){ card.addEventListener("click", function(e){
+      if (!e.target.closest(".copy-link-btn")) showCamp(c);
+    }); })(camp);
+    grid.appendChild(card);
+  });
+}
+
+/* ── 데스크톱 테이블 헤더 ── */
+var COL_N = 120, COL_R = 82, COL_D = 90;
+function buildColgroup(cols) {
+  var c = "<colgroup>"+
+    "<col style=\"width:"+COL_N+"px\">"+
+    "<col style=\"width:"+COL_R+"px\">";
+  for (var i=0;i<cols;i++) c+="<col style=\"width:"+COL_D+"px\">";
+  return c+"</colgroup>";
+}
+function buildWHead(days, wCls, label) {
+  label = label || "";
+  var h = buildColgroup(days.length)+
+    "<tr>"+
+    "<th style=\"width:"+COL_N+"px\">이름</th>"+
+    "<th style=\"width:"+COL_R+"px\">라우트</th>"+
+    "<th colspan=\""+days.length+"\" class=\""+wCls+"\" style=\"text-align:center\">"+label+"</th>"+
+    "</tr><tr><th></th><th></th>";
+  days.forEach(function(wd) {
+    var cls = wd.isToday?"toh":wCls;
+    var dc  = wd.dow===0?"sun":wd.dow===6?"sat":"wdy";
+    h += "<th class=\"dcol "+cls+"\">"+
+      "<span class=\"dnum\">"+parseInt(wd.ds.split("-")[2])+"</span>"+
+      "<span class=\"dday "+dc+"\">"+wd.dn+"</span>"+
+      (wd.peak?"<span class=\"dpk\">PEAK</span>":"")+
+      (wd.isToday?"<span class=\"dtd\">PDD</span>":"")+
+    "</th>";
+  });
+  return h+"</tr>";
+}
+function buildWRows(drivers, days, wCls) {
+  var h = buildColgroup(days.length);
+  drivers.forEach(function(d) {
+    h += "<tr data-n=\""+d.name.toLowerCase()+"\" data-i=\""+d.id.toLowerCase()+"\">";
+    h += "<td class=\"nc\">"+d.name+"<div class=\"sub\">"+d.id+"</div></td>";
+    h += "<td class=\"rc\">"+d.route+"</td>";
+    days.forEach(function(wd) {
+      var tc = "sc "+(wd.isToday?"tod":wCls==="w1h"?"w1":"w2");
+      var v  = (d.schedule&&d.schedule[wd.ds])||"";
+      var c  = wd.inSheet ? mkChip(v) : "<span class=\"chip cn\">·</span>";
+      h += "<td class=\""+tc+"\">"+c+"</td>";
+    });
+    h += "</tr>";
+  });
+  return h || "<tr class=\"empty-r\"><td colspan=\""+(2+days.length)+"\">—</td></tr>";
+}
+
+/* ── 모바일 카드 ── */
+function buildMobileCards(drivers) {
+  var html = "";
+  drivers.forEach(function(d) {
+    var todayVal = (d.schedule&&d.schedule[TODAY])||"";
+    var todayChip = mkChip(todayVal);
+
+    /* 1주차 날짜 그리드 */
+    function makeDayGrid(days) {
+      var g = "<div class=\"day-grid\">";
+      days.forEach(function(wd) {
+        var v   = (d.schedule&&d.schedule[wd.ds])||"";
+        var c   = wd.inSheet ? mkChip(v) : "<span class=\"chip cn\">·</span>";
+        var dc  = wd.dow===0?"sun":wd.dow===6?"sat":"wdy";
+        var tod = wd.isToday?" today-cell":"";
+        g += "<div class=\"day-cell"+tod+"\">"+
+          "<span class=\"dc-dnum "+dc+"\">"+parseInt(wd.ds.split("-")[2])+"</span>"+
+          "<span class=\"dc-dday "+dc+"\">"+wd.dn+"</span>"+
+          (wd.isToday?"<span class=\"dc-today-badge\">PDD</span>":"")+
+          "<span class=\"dc-chip\">"+c+"</span>"+
+          "</div>";
+      });
+      return g+"</div>";
+    }
+
+    html +=
+      "<div class=\"driver-card\" data-n=\""+d.name.toLowerCase()+"\" data-i=\""+d.id.toLowerCase()+"\">"+
+        "<div class=\"dc-head\">"+
+          "<div class=\"dc-avatar\">"+getInitial(d.name)+"</div>"+
+          "<div class=\"dc-info\">"+
+            "<div class=\"dc-name\">"+d.name+"</div>"+
+            "<div class=\"dc-sub\">"+d.id+"</div>"+
+          "</div>"+
+          "<div class=\"dc-route\">"+d.route+"</div>"+
+          "<div class=\"dc-today\">"+todayChip+"</div>"+
+          "<span class=\"dc-chevron\">▾</span>"+
+        "</div>"+
+        "<div class=\"dc-body\">"+
+          "<div class=\"week-grid-label wgl-w1\">🟠 1주차 "+fmt(W1[0].ds)+"~"+fmt(W1[6].ds)+"</div>"+
+          makeDayGrid(W1)+
+          "<div class=\"week-grid-label wgl-w2\">🔵 2주차 "+fmt(W2[0].ds)+"~"+fmt(W2[6].ds)+"</div>"+
+          makeDayGrid(W2)+
+        "</div>"+
+      "</div>";
+  });
+  return html;
+}
+
+/* ── CAMP PAGE ── */
+function showCamp(camp) {
+  var drivers = BY_CAMP[camp];
+  if (!drivers) { showIndex(); return; }
+
+  pgIndex.classList.remove("on");
+  pgCamp.classList.add("on");
+  document.title = camp+" 스케줄";
+
+  document.getElementById("cp-title").textContent = camp;
+
+  var nb = document.getElementById("cp-notice");
+  if (noticeMsg) { nb.style.display="block"; nb.textContent=noticeMsg; }
+  else           { nb.style.display="none"; }
+
+  var dow = KD[new Date(TODAY+"T00:00:00").getDay()];
+  document.getElementById("cp-today").textContent = "PDD "+TODAY+" ("+dow+")";
+  var wc = drivers.filter(function(d){ return isWork(d.schedule[TODAY]||""); }).length;
+  var oc = drivers.length - wc;
+  document.getElementById("cp-chips").innerHTML =
+    "<span class=\"tchip wk\">출근 "+wc+"명</span>"+
+    "<span class=\"tchip of\">휴무 "+oc+"명</span>";
+
+  /* 주차 레이블 */
+  document.getElementById("wl1-range").textContent = fmt(W1[0].ds)+" ~ "+fmt(W1[6].ds);
+  document.getElementById("wl2-range").textContent = fmt(W2[0].ds)+" ~ "+fmt(W2[6].ds);
+
+  /* 데스크톱 테이블 */
+  document.getElementById("cp-thead-w1").innerHTML = buildWHead(W1,"w1h","🟠 1주차 &nbsp;|&nbsp; <span style='font-size:10px;opacity:.7;font-weight:500'>스케줄 변경 불가</span>");
+  document.getElementById("cp-tbody-w1").innerHTML = buildWRows(drivers,W1,"w1h");
+  document.getElementById("cp-thead-w2").innerHTML = buildWHead(W2,"w2h","🔵 2주차");
+  document.getElementById("cp-tbody-w2").innerHTML = buildWRows(drivers,W2,"w2h");
+
+  /* 모바일 카드 */
+  document.getElementById("mobile-list").innerHTML = buildMobileCards(drivers);
+
+  /* 접기/펼치기 */
+  document.querySelectorAll(".dc-head").forEach(function(head) {
+    head.addEventListener("click", function() {
+      head.parentElement.classList.toggle("collapsed");
+    });
+  });
+
+  document.getElementById("cp-search").value = "";
+  setCount(drivers.length);
+
+  window.scrollTo(0,0);
+  requestAnimationFrame(function() {
+    fixStickyHeads();
+  });
+}
+
+function fixStickyHeads() {
+  var tb = document.querySelector(".topbar");
+  if (!tb) return;
+  var tbH = tb.offsetHeight;
+
+  // .tbl-scroll 에 max-height 설정
+  // → overflow:auto 컨테이너가 뷰포트보다 작아지면
+  //   그 안의 thead th { top:0 } sticky가 컨테이너 상단에 고정됨
+  // → 컨테이너 자체는 topbar 아래 위치하므로 결과적으로 정렬됨
+  var legend = document.querySelector(".legend");
+  var lgH = legend ? legend.getBoundingClientRect().height + 16 : 0;
+  var wl   = document.querySelector(".week-label");
+  var wlH  = wl ? wl.getBoundingClientRect().height + 14 : 0;
+  var notice = document.getElementById("cp-notice");
+  var ntH  = (notice && notice.style.display !== "none") ? notice.offsetHeight + 8 : 0;
+  // 각 tbl-scroll의 max-height = 뷰포트 - topbar - legend - week-label - gap
+  var maxH = Math.floor(window.innerHeight - tbH - lgH - wlH - ntH - 24);
+  if (maxH < 200) maxH = 400;
+
+  document.querySelectorAll(".tbl-scroll").forEach(function(el) {
+    el.style.maxHeight = maxH + "px";
+  });
+}
+
+function doSearch() {
+  var q = document.getElementById("cp-search").value.toLowerCase().trim();
+  var vis = 0;
+  /* 데스크톱 */
+  document.querySelectorAll("#cp-tbody-w1 tr[data-n], #cp-tbody-w2 tr[data-n]").forEach(function(tr) {
+    var show = !q||tr.dataset.n.indexOf(q)>-1||tr.dataset.i.indexOf(q)>-1;
+    tr.classList.toggle("hid",!show);
+    if (show) vis++;
+  });
+  /* 모바일 */
+  document.querySelectorAll(".driver-card[data-n]").forEach(function(card) {
+    var show = !q||card.dataset.n.indexOf(q)>-1||card.dataset.i.indexOf(q)>-1;
+    card.classList.toggle("hid",!show);
+  });
+  /* 데스크톱 카운트는 1주차 기준 */
+  var visDesktop = document.querySelectorAll("#cp-tbody-w1 tr[data-n]:not(.hid)").length;
+  setCount(visDesktop||vis);
+}
+
+function setCount(n) {
+  document.getElementById("cp-count").textContent = n+"명 표시";
+}
+
+function copyLink(btn) {
+  var link = btn.getAttribute("data-link");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(link).then(function() {
+      var orig = btn.textContent;
+      btn.textContent = "✅ 복사됨!";
+      setTimeout(function(){ btn.textContent = orig; }, 1500);
+    });
+  } else {
+    // fallback
+    var ta = document.createElement("textarea");
+    ta.value = link; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    var orig = btn.textContent;
+    btn.textContent = "✅ 복사됨!";
+    setTimeout(function(){ btn.textContent = orig; }, 1500);
+  }
+}
+
+/* ── EVENTS ── */
+document.getElementById("btn-back").addEventListener("click", function() { showIndex(); });
+document.getElementById("cp-search").addEventListener("input", function() { doSearch(); });
+window.addEventListener("resize", function() {
+  if (pgCamp.classList.contains("on")) fixStickyHeads();
+});
+
+/* ── HASH ROUTING ──
+   URL 형식:
+     ?          → 관리자 전체 목록
+     #강서1캠프  → 해당 캠프만 표시 (기사 전용)
+   
+   배포 후 각 캠프 링크 예시:
+     https://your-site.com/스케줄.html#강서1캠프
+─────────────────────────────────── */
+function getHashCamp() {
+  var h = location.hash;
+  if (!h || h === "#") return null;
+  return decodeURIComponent(h.slice(1));
+}
+
+function init() {
+  var campFromHash = getHashCamp();
+  if (campFromHash && BY_CAMP[campFromHash]) {
+    // 캠프 전용 모드 — 뒤로가기 숨김, 해당 캠프만 표시
+    document.body.classList.add("camp-only");
+    showCamp(campFromHash);
+  } else {
+    // 관리자 모드 — 전체 목록
+    showIndex();
+  }
+}
+
+// 해시 변경 시 재라우팅 (브라우저 뒤로가기 등)
+window.addEventListener("hashchange", function() {
+  var c = getHashCamp();
+  if (c && BY_CAMP[c]) {
+    document.body.classList.add("camp-only");
+    showCamp(c);
+  } else {
+    document.body.classList.remove("camp-only");
+    showIndex();
+  }
+});
+
+/* init()는 loadFromAPI() 콜백에서 호출됩니다 */
+</script>
+</body>
+</html>
