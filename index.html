@@ -174,7 +174,7 @@ body {
 .bdr-name { font-weight: 600; flex-shrink: 0; }
 .bdr-route {
   font-family: "JetBrains Mono", monospace; font-size: 10px;
-  color: var(--orange); font-weight: 600;
+  color: var(--green); font-weight: 600;
   flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .bdr-status { flex-shrink: 0; }
@@ -373,6 +373,7 @@ td.sc.w1:last-child, td.sc.w1:nth-child(9) { border-right: 2px solid var(--borde
 .co { background: var(--rs); color: var(--red);   border: 1px solid rgba(220,38,38,.18); opacity: .8; }
 .cf { background: var(--rs); color: var(--red); border: 1px solid rgba(220,38,38,.18); opacity: .8; }
 .cr { background: var(--os); color: var(--orange); border: 1px solid rgba(234,88,12,.22); font-size: 8px; min-width: 0; }
+.cg { background: var(--gs); color: var(--green);  border: 1px solid rgba(22,163,74,.25);  font-size: 8px; min-width: 0; }
 .cv { background: rgba(59,130,246,.1); color: #2563eb; border: 1px solid rgba(59,130,246,.22); }
 .cs { background: rgba(236,72,153,.1); color: #db2777; border: 1px solid rgba(236,72,153,.22); }
 .ce { color: var(--text4); font-size: 8px; min-width: 0; }
@@ -475,6 +476,82 @@ td.sc.w1:last-child, td.sc.w1:nth-child(9) { border-right: 2px solid var(--borde
 @media (max-width: 400px) {
   .idx-grid { grid-template-columns: 1fr; }
 }
+
+/* ── 이전 스케줄 버튼 ── */
+.hist-btn {
+  background: var(--acc-soft);
+  color: var(--accent);
+  border: 1px solid rgba(37,99,235,.25);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s;
+}
+.hist-btn:hover { background: rgba(37,99,235,.15); }
+
+/* ── 모달 ── */
+#hist-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 5000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.hist-box {
+  background: var(--surface);
+  border-radius: 16px;
+  width: 100%; max-width: 360px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  overflow: hidden;
+}
+.hist-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--theadbg);
+  font-size: 14px; font-weight: 700; color: var(--text);
+}
+.hist-close {
+  background: none; border: none; cursor: pointer;
+  font-size: 16px; color: var(--text2); padding: 2px 6px;
+  border-radius: 6px;
+}
+.hist-close:hover { background: var(--border); }
+.hist-body { padding: 16px 20px 20px; max-height: 60vh; overflow-y: auto; }
+.hist-week-btn {
+  display: block; width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px; font-weight: 600; color: var(--text);
+  transition: background .15s, border-color .15s;
+}
+.hist-week-btn:hover { background: var(--acc-soft); border-color: var(--accent); color: var(--accent); }
+.hist-week-btn .hw-range { font-size: 11px; color: var(--text3); font-weight: 400; margin-top:2px; }
+.hist-week-btn.hw-current { background: var(--acc-soft); border-color: var(--accent); color: var(--accent); }
+
+/* ── 이전 스케줄 표시 중 배너 ── */
+#hist-banner {
+  display: none;
+  background: rgba(37,99,235,.1);
+  border-bottom: 2px solid var(--accent);
+  padding: 10px 20px;
+  font-size: 12px; color: var(--accent); font-weight: 600;
+  text-align: center;
+}
+#hist-banner button {
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 6px;
+  padding: 3px 12px; font-size: 11px; cursor: pointer;
+  margin-left: 12px;
+}
+
 </style>
 </head>
 <body>
@@ -509,10 +586,15 @@ td.sc.w1:last-child, td.sc.w1:nth-child(9) { border-right: 2px solid var(--borde
     <div class="topbar-r2">
       <span class="today-lbl" id="cp-today">—</span>
       <div class="tchip-wrap" id="cp-chips"></div>
+      <button class="hist-btn" id="btn-history" onclick="showHistoryModal()">📅 이전 스케줄</button>
     </div>
   </div>
 
   <div id="cp-notice" style="display:none" class="notice-bar"></div>
+  <div id="hist-banner">
+    <span id="hist-banner-txt">—</span>
+    <button onclick="backToToday()">오늘 주로 돌아가기</button>
+  </div>
 
   <div class="legend">
     <div class="legend-item"><span class="chip cw" style="min-width:0;padding:1px 6px">출근</span> 출근</div>
@@ -554,12 +636,27 @@ td.sc.w1:last-child, td.sc.w1:nth-child(9) { border-right: 2px solid var(--borde
   <div class="mobile-list" id="mobile-list"></div>
 </div>
 
+<!-- ════ 이전 스케줄 모달 ════ -->
+<div id="hist-modal" style="display:none" onclick="if(event.target===this)closeHistoryModal()">
+  <div class="hist-box">
+    <div class="hist-header">
+      <span>📅 이전 스케줄 조회</span>
+      <button class="hist-close" onclick="closeHistoryModal()">✕</button>
+    </div>
+    <div class="hist-body">
+      <p style="font-size:12px;color:var(--text3);margin-bottom:12px">조회할 주를 선택하세요</p>
+      <div id="hist-weeks"></div>
+    </div>
+    <div id="hist-loading" style="display:none"></div>
+  </div>
+</div>
+
 <script>
 
 /* ═══════════════════════════════════════
    API 설정
 ═══════════════════════════════════════ */
-var API_URL = "https://script.google.com/macros/s/AKfycbxOKF7DCFGZmZZClm1MTQIHiYo2nmqh6c0vosDuXA7fb7NahfT0kXI1iseKMbmncgFp/exec";
+var API_URL = "https://script.google.com/macros/s/AKfycbwpw9ofKNc5DEm4W-tGeiIJC5BQjxYZU0grhAG5vsngos0SSApaptOY4O5kKBc376G1/exec";
 
 /* ═══════════════════════════════════════
    유틸
@@ -583,14 +680,14 @@ function isWork(v) {
            v.indexOf("휴가")>-1||v.indexOf("병가")>-1||
            v.indexOf("퇴사")>-1||v.indexOf("용차")>-1);
 }
-function mkChip(v) {
+function mkChip(v, useGreen) {
   if (!v||v===""||v==="None") return "<span class=\"chip ce\">—</span>";
   if (v==="출근")              return "<span class=\"chip cw\">출근</span>";
   if (v==="휴무"||v==="계획된 휴무") return "<span class=\"chip co\">"+v+"</span>";
   if (v==="고정휴무")          return "<span class=\"chip cf\">고정휴무</span>";
   if (v.indexOf("휴가")>-1)   return "<span class=\"chip cv\">"+v+"</span>";
   if (v.indexOf("병가")>-1)   return "<span class=\"chip cs\">"+v+"</span>";
-  return "<span class=\"chip cr\">"+v+"</span>";
+  return "<span class=\"chip cg\">"+v+"</span>";
 }
 function getInitial(name) {
   return name ? name.charAt(0) : "?";
@@ -703,12 +800,15 @@ function buildWindow() {
 /* ═══════════════════════════════════════
    캠프 맵 구성
 ═══════════════════════════════════════ */
+var HIDDEN_CAMPS = ["용차", "비고1", "퇴사"];
+
 function buildCampMap() {
   CAMPS = []; BY_CAMP = {};
   DRIVERS.forEach(function(d) {
     if (!BY_CAMP[d.camp]) { BY_CAMP[d.camp]=[]; CAMPS.push(d.camp); }
     BY_CAMP[d.camp].push(d);
   });
+  CAMPS = CAMPS.filter(function(c){ return HIDDEN_CAMPS.indexOf(c) === -1; });
 }
 
 /* ═══════════════════════════════════════
@@ -717,15 +817,16 @@ function buildCampMap() {
 function loadFromAPI() {
   var xhr = new XMLHttpRequest();
   xhr.open("GET", API_URL, true);
-  xhr.timeout = 30000;
+  xhr.timeout = 60000;
 
   xhr.onload = function() {
     if (xhr.status >= 200 && xhr.status < 300) {
       try {
         var data = JSON.parse(xhr.responseText);
         if (data.error) throw new Error(data.error);
-        SHEET_DATES = data.dates;
-        DRIVERS     = data.drivers;
+        SHEET_DATES = (data.dates||[]).map(function(ds){ return { date: ds, raw: ds }; });
+        DRIVERS     = data.drivers || [];
+        if (data.notice) noticeMsg = data.notice;
         buildWindow();
         buildCampMap();
         hideOverlay();
@@ -767,7 +868,7 @@ function showIndex() {
     var oc = drivers.length - wc;
     var card = document.createElement("div");
     var campLink = location.href.split("#")[0] + "#" + encodeURIComponent(camp);
-    var isBackup = (camp === "백업");
+    var isBackup = (camp === "백업" || camp === "운영자");
 
     card.className = "camp-card" + (isBackup ? " backup-card" : "");
 
@@ -860,18 +961,19 @@ function buildWRows(drivers, days, wCls) {
 }
 
 /* ── 모바일 카드 ── */
-function buildMobileCards(drivers) {
+function buildMobileCards(drivers, useGreen, w1, w2) {
+  w1 = w1 || W1; w2 = w2 || W2;
   var html = "";
   drivers.forEach(function(d) {
     var todayVal = (d.schedule&&d.schedule[TODAY])||"";
-    var todayChip = mkChip(todayVal);
+    var todayChip = mkChip(todayVal, useGreen);
 
     /* 1주차 날짜 그리드 */
     function makeDayGrid(days) {
       var g = "<div class=\"day-grid\">";
       days.forEach(function(wd) {
         var v   = (d.schedule&&d.schedule[wd.ds])||"";
-        var c   = wd.inSheet ? mkChip(v) : "<span class=\"chip cn\">·</span>";
+        var c   = wd.inSheet ? mkChip(v, useGreen) : "<span class=\"chip cn\">·</span>";
         var dc  = wd.dow===0?"sun":wd.dow===6?"sat":"wdy";
         var tod = wd.isToday?" today-cell":"";
         g += "<div class=\"day-cell"+tod+"\">"+
@@ -897,10 +999,10 @@ function buildMobileCards(drivers) {
           "<span class=\"dc-chevron\">▾</span>"+
         "</div>"+
         "<div class=\"dc-body\">"+
-          "<div class=\"week-grid-label wgl-w1\">🟠 1주차 "+fmt(W1[0].ds)+"~"+fmt(W1[6].ds)+"</div>"+
-          makeDayGrid(W1)+
-          "<div class=\"week-grid-label wgl-w2\">🔵 2주차 "+fmt(W2[0].ds)+"~"+fmt(W2[6].ds)+"</div>"+
-          makeDayGrid(W2)+
+          "<div class=\"week-grid-label wgl-w1\">🟠 1주차 "+fmt(w1[0].ds)+"~"+fmt(w1[6].ds)+"</div>"+
+          makeDayGrid(w1)+
+          "<div class=\"week-grid-label wgl-w2\">🔵 2주차 "+fmt(w2[0].ds)+"~"+fmt(w2[6].ds)+"</div>"+
+          makeDayGrid(w2)+
         "</div>"+
       "</div>";
   });
@@ -930,18 +1032,47 @@ function showCamp(camp) {
     "<span class=\"tchip wk\">출근 "+wc+"명</span>"+
     "<span class=\"tchip of\">휴무 "+oc+"명</span>";
 
+  /* TODAY(PDD) 기준 이번 주 일요일 ~ 다음 주 토요일 계산 */
+  var rDate = new Date(TODAY + "T00:00:00");
+  var rDow  = rDate.getDay();
+  var sun0  = toDS(new Date(rDate.getFullYear(), rDate.getMonth(), rDate.getDate() - rDow));
+  var sat1  = addD(sun0, 13);
+
+  /* API 날짜(SL 딕셔너리) 중 오늘 기준 2주 범위 날짜만 추출 */
+  var sheetDatesSorted = SHEET_DATES.map(function(s){ return s.date; }).sort();
+  var rangeDates = sheetDatesSorted.filter(function(ds){ return ds >= sun0 && ds <= sat1; });
+
+  /* 범위 날짜가 없으면 API 날짜 전체를 14개까지 사용 */
+  if (rangeDates.length === 0) {
+    rangeDates = sheetDatesSorted.slice(0, 14);
+  }
+
+  /* 날짜 객체 생성 */
+  var dispW1 = [], dispW2 = [];
+  rangeDates.forEach(function(ds, i) {
+    var dw = new Date(ds + "T00:00:00").getDay();
+    var obj = { ds: ds, dow: dw, dn: KD[dw],
+                peak: SL[ds] && SL[ds].indexOf("Peak") > -1,
+                inSheet: true, isToday: ds === TODAY };
+    if (i < 7) dispW1.push(obj); else dispW2.push(obj);
+  });
+
+  /* 안전 처리: dispW1이 비어있으면 W1/W2 사용 */
+  if (dispW1.length === 0) { dispW1 = W1; dispW2 = W2; }
+
   /* 주차 레이블 */
-  document.getElementById("wl1-range").textContent = fmt(W1[0].ds)+" ~ "+fmt(W1[6].ds);
-  document.getElementById("wl2-range").textContent = fmt(W2[0].ds)+" ~ "+fmt(W2[6].ds);
+  document.getElementById("wl1-range").textContent = fmt(dispW1[0].ds)+" ~ "+fmt(dispW1[dispW1.length-1].ds);
+  document.getElementById("wl2-range").textContent = dispW2.length ? fmt(dispW2[0].ds)+" ~ "+fmt(dispW2[dispW2.length-1].ds) : "";
 
   /* 데스크톱 테이블 */
-  document.getElementById("cp-thead-w1").innerHTML = buildWHead(W1,"w1h","🟠 1주차 &nbsp;|&nbsp; <span style='font-size:10px;opacity:.7;font-weight:500'>스케줄 변경 불가</span>");
-  document.getElementById("cp-tbody-w1").innerHTML = buildWRows(drivers,W1,"w1h");
-  document.getElementById("cp-thead-w2").innerHTML = buildWHead(W2,"w2h","🔵 2주차");
-  document.getElementById("cp-tbody-w2").innerHTML = buildWRows(drivers,W2,"w2h");
+  var useGreen = (camp === "백업" || camp === "운영자");
+  document.getElementById("cp-thead-w1").innerHTML = buildWHead(dispW1,"w1h","🟠 1주차 &nbsp;|&nbsp; <span style='font-size:10px;opacity:.7;font-weight:500'>스케줄 변경 불가</span>");
+  document.getElementById("cp-tbody-w1").innerHTML = buildWRows(drivers,dispW1,"w1h",useGreen);
+  document.getElementById("cp-thead-w2").innerHTML = buildWHead(dispW2,"w2h","🔵 2주차");
+  document.getElementById("cp-tbody-w2").innerHTML = buildWRows(drivers,dispW2,"w2h",useGreen);
 
   /* 모바일 카드 */
-  document.getElementById("mobile-list").innerHTML = buildMobileCards(drivers);
+  document.getElementById("mobile-list").innerHTML = buildMobileCards(drivers, useGreen, dispW1, dispW2);
 
   /* 접기/펼치기 */
   document.querySelectorAll(".dc-head").forEach(function(head) {
@@ -1073,6 +1204,120 @@ window.addEventListener("hashchange", function() {
 });
 
 /* init()는 loadFromAPI() 콜백에서 호출됩니다 */
+
+/* ═══════════════════════════════════════
+   이전 스케줄 조회
+═══════════════════════════════════════ */
+var HIST_MODE = false;   // 이전 스케줄 표시 중 여부
+var HIST_CAMP = "";      // 현재 캠프 이름
+
+/* 모달 열기 — 과거 8주 목록 생성 */
+function showHistoryModal() {
+  /* 오늘(PDD) 기준 이번주 일요일 */
+  var pdd     = new Date(TODAY + "T00:00:00");
+  var thisSun = new Date(pdd);
+  thisSun.setDate(pdd.getDate() - pdd.getDay());
+
+  var container = document.getElementById("hist-weeks");
+  container.innerHTML = "";
+
+  /* 이번주 포함 ~ 8주 전까지 목록 */
+  for (var w = 0; w <= 7; w++) {
+    var sun = new Date(thisSun);
+    sun.setDate(thisSun.getDate() - w * 7);
+    var sunDs = toDS(sun);
+    var satDs = addD(sunDs, 6);
+
+    var btn = document.createElement("button");
+    btn.className = "hist-week-btn" + (w === 0 ? " hw-current" : "");
+    btn.innerHTML =
+      "<div>" + (w === 0 ? "📌 이번 주 (현재)" : w + "주 전") + "</div>" +
+      "<div class='hw-range'>" + fmtFull(sunDs) + " ~ " + fmtFull(satDs) + "</div>";
+
+    (function(weekSun, weekSat, isCurrentWeek) {
+      btn.onclick = function() {
+        closeHistoryModal();
+        if (isCurrentWeek) {
+          backToToday();
+        } else {
+          loadHistWeek(weekSun, weekSat);
+        }
+      };
+    })(sunDs, satDs, w === 0);
+
+    container.appendChild(btn);
+  }
+
+  var modal = document.getElementById("hist-modal");
+  modal.style.display = "flex";
+}
+
+function closeHistoryModal() {
+  document.getElementById("hist-modal").style.display = "none";
+}
+
+/* 특정 주 스케줄 로드 — 기존 DRIVERS 데이터에서 직접 조회 */
+function loadHistWeek(sunDs, satDs) {
+  closeHistoryModal();
+  var campName = document.getElementById("cp-title").textContent;
+  renderHistWeek(sunDs, satDs, campName);
+}
+
+/* 기존 DRIVERS 데이터로 이전 주 렌더링 */
+function renderHistWeek(sunDs, satDs, campName) {
+  /* 현재 캠프 드라이버들 */
+  var drivers = BY_CAMP[campName] || [];
+
+  /* 7일 날짜 객체 생성 */
+  var histW1 = [], histW2 = [];
+  for (var i = 0; i < 7; i++) {
+    var ds = addD(sunDs, i);
+    var dw = new Date(ds + "T00:00:00").getDay();
+    var obj = { ds: ds, dow: dw, dn: KD[dw], peak: false, inSheet: true, isToday: ds === TODAY };
+    histW1.push(obj);
+  }
+  for (var j = 0; j < 7; j++) {
+    var ds2 = addD(addD(sunDs, 7), j);
+    var dw2 = new Date(ds2 + "T00:00:00").getDay();
+    var obj2 = { ds: ds2, dow: dw2, dn: KD[dw2], peak: false, inSheet: true, isToday: ds2 === TODAY };
+    histW2.push(obj2);
+  }
+
+  /* 테이블 렌더링 */
+  var useGreen = (campName === "백업" || campName === "운영자");
+  document.getElementById("cp-thead-w1").innerHTML = buildWHead(histW1, "w1h", "📅 " + fmtFull(sunDs) + " ~ " + fmtFull(addD(sunDs, 6)));
+  document.getElementById("cp-tbody-w1").innerHTML = buildWRows(drivers, histW1, "w1h", useGreen);
+  document.getElementById("cp-thead-w2").innerHTML = buildWHead(histW2, "w2h", "📅 " + fmtFull(addD(sunDs, 7)) + " ~ " + fmtFull(satDs));
+  document.getElementById("cp-tbody-w2").innerHTML = buildWRows(drivers, histW2, "w2h", useGreen);
+  document.getElementById("mobile-list").innerHTML  = buildMobileCards(drivers, useGreen, histW1, histW2);
+
+  /* 주차 레이블 업데이트 */
+  document.getElementById("wl1-range").textContent = fmtFull(sunDs) + " ~ " + fmtFull(addD(sunDs, 6));
+  document.getElementById("wl2-range").textContent = fmtFull(addD(sunDs, 7)) + " ~ " + fmtFull(satDs);
+
+  /* 배너 표시 */
+  HIST_MODE = true;
+  var banner = document.getElementById("hist-banner");
+  banner.style.display = "block";
+  document.getElementById("hist-banner-txt").textContent =
+    "📅 이전 스케줄 조회 중: " + fmtFull(sunDs) + " ~ " + fmtFull(satDs);
+
+  /* 접기/펼치기 재등록 */
+  document.querySelectorAll(".dc-head").forEach(function(head) {
+    head.onclick = function() { head.parentElement.classList.toggle("collapsed"); };
+  });
+
+  window.scrollTo(0, 0);
+}
+
+/* 오늘 주로 복귀 */
+function backToToday() {
+  HIST_MODE = false;
+  document.getElementById("hist-banner").style.display = "none";
+  var campName = document.getElementById("cp-title").textContent;
+  if (campName) showCamp(campName);
+}
+
 </script>
 </body>
 </html>
