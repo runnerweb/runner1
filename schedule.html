@@ -343,19 +343,7 @@ body.camp-only .back-btn { display: none; }
   font-size: 12px; color: var(--text2); line-height: 1.5;
   flex: 1; word-break: keep-all;
 }
-.loc-map-btn {
-  flex-shrink: 0;
-  background: var(--acc-soft);
-  border: 1px solid rgba(37,99,235,.22);
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 11px; font-weight: 600; color: var(--accent);
-  cursor: pointer; white-space: nowrap;
-  text-decoration: none;
-  display: inline-flex; align-items: center; gap: 3px;
-  transition: background .12s;
-}
-.loc-map-btn:hover { background: rgba(37,99,235,.16); }
+
 .loc-empty {
   text-align: center; padding: 36px 20px;
   font-size: 13px; color: var(--text3); line-height: 1.8;
@@ -1829,6 +1817,8 @@ function backToToday() {
 /* ═══════════════════════════════════════
    캠프 위치 모달 (실시간 API 조회)
 ═══════════════════════════════════════ */
+var CAMP_LOCATIONS = {};
+
 function showLocModal() {
   var modal = document.getElementById("loc-modal");
   var body  = document.getElementById("loc-body");
@@ -1855,10 +1845,10 @@ function showLocModal() {
   body.innerHTML = "<div class='loc-loading'>⏳ 위치 정보 불러오는 중…</div>";
   modal.style.display = "flex";
 
-  // 캠프위치 실시간 API 호출
   var btn = document.getElementById("btn-loc");
   if (btn) btn.classList.add("loading");
 
+  // 실시간 API 호출
   var xhr = new XMLHttpRequest();
   xhr.open("GET", API_URL + "?action=getCampLocations", true);
   xhr.timeout = 15000;
@@ -1887,9 +1877,9 @@ function renderLocBody(campName, isBackup) {
   // 표시할 캠프 목록 결정
   var targets = [];
   if (isBackup || !campName) {
-    // 백업 또는 index: 전체 캠프 위치 (CAMPS 순서 유지)
+    // 백업/전체: CAMPS 순서 유지, 시트에 있는 것만
     targets = CAMPS.filter(function(c){ return CAMP_LOCATIONS[c]; });
-    // CAMPS에 없는 캠프위치 시트 항목도 추가
+    // CAMPS에 없는 항목도 추가
     Object.keys(CAMP_LOCATIONS).forEach(function(c){
       if (targets.indexOf(c) === -1) targets.push(c);
     });
@@ -1900,7 +1890,7 @@ function renderLocBody(campName, isBackup) {
 
   if (targets.length === 0) {
     body.innerHTML =
-      "<div class='loc-empty'>📭 위치 정보가 없습니다.<br>"+
+      "<div class='loc-empty'>📭 위치 정보가 없습니다.<br>" +
       "<span style='font-size:11px;color:var(--text3)'>캠프위치 시트에 데이터를 입력해주세요</span></div>";
     return;
   }
@@ -1908,90 +1898,19 @@ function renderLocBody(campName, isBackup) {
   targets.forEach(function(name) {
     var addr = CAMP_LOCATIONS[name] || "";
     if (!addr) return;
-    // 카카오맵 검색 링크
-    var kakaoUrl = "https://map.kakao.com/link/search/" + encodeURIComponent(addr);
-    // 구글맵 검색 링크
-    var googleUrl = "https://www.google.com/maps/search/" + encodeURIComponent(addr);
-
     var row = document.createElement("div");
     row.className = "loc-row";
     row.innerHTML =
       "<div class='loc-camp-name'>📦 " + name + "</div>" +
-      "<div class='loc-address'>" + addr + "</div>" +
-      "<div style='display:flex;flex-direction:column;gap:4px;flex-shrink:0'>" +
-        "<a class='loc-map-btn' href='" + kakaoUrl + "' target='_blank' rel='noopener'>🗺️ 카카오</a>" +
-        "<a class='loc-map-btn' href='" + googleUrl + "' target='_blank' rel='noopener' style='background:rgba(234,88,12,.08);border-color:rgba(234,88,12,.22);color:var(--orange)'>🌐 구글</a>" +
-      "</div>";
+      "<div class='loc-address'>" + addr + "</div>";
     body.appendChild(row);
   });
-  // 캠프 위치 데이터를 저장할 변수
-let campLocationData = {};
-
-// 페이지 로드 시 또는 필요할 때 캠프 위치를 서버에서 가져오는 함수
-async function fetchCampLocations() {
-  const btnLoc = document.getElementById('btn-loc');
-  btnLoc.classList.add('loading'); // 로딩 상태 표시
-  
-  try {
-    // 본인의 앱스스크립트 URL (기존 스케줄 불러오는 URL과 동일)
-    const scriptUrl = "YOUR_GAS_DEPLOY_URL"; 
-    const response = await fetch(`${scriptUrl}?action=getCampLocations`);
-    const data = await response.json();
-    
-    if (data.ok) {
-      campLocationData = data.locations;
-    }
-  } catch (e) {
-    console.error("캠프 위치 로드 실패:", e);
-  } finally {
-    btnLoc.classList.remove('loading');
-  }
-}
-
-// 모달을 열 때 데이터를 화면에 그림
-function showLocModal() {
-  const modal = document.getElementById('loc-modal');
-  const body = document.getElementById('loc-body');
-  
-  modal.style.display = 'flex';
-  
-  // 데이터가 없으면 먼저 가져옴
-  if (Object.keys(campLocationData).length === 0) {
-    body.innerHTML = '<div class="loc-loading">불러오는 중…</div>';
-    fetchCampLocations().then(() => renderLocList());
-  } else {
-    renderLocList();
-  }
-}
-
-// 실제 리스트를 그리는 함수
-function renderLocList() {
-  const body = document.getElementById('loc-body');
-  const entries = Object.entries(campLocationData);
-
-  if (entries.length === 0) {
-    body.innerHTML = '<div class="loc-empty">등록된 캠프 위치 정보가 없습니다.<br>구글 시트 [캠프위치] 시트를 확인하세요.</div>';
-    return;
-  }
-
-  body.innerHTML = entries.map(([name, addr]) => `
-    <div class="loc-row">
-      <div class="loc-camp-name">${name}</div>
-      <div class="loc-address">${addr}</div>
-      <a href="https://map.kakao.com/link/search/${encodeURIComponent(addr)}" 
-         target="_blank" class="loc-map-btn">📍 지도</a>
-    </div>
-  `).join('');
-}
-
-function closeLocModal() {
-  document.getElementById('loc-modal').style.display = 'none';
-}
 }
 
 function closeLocModal() {
   document.getElementById("loc-modal").style.display = "none";
 }
+
 </script>
 </body>
 </html>
