@@ -390,9 +390,9 @@
       <div class="ip-head">
         <div class="ip-head-top">
           <div class="ip-title">
-            <div class="ip-title-icon">📅</div>
+            <div class="ip-title-icon">📢</div>
             <div>
-              <div>내일의 이슈</div>
+              <div>오늘의 이슈</div>
               <div id="ip-subtitle" style="font-size:11px;font-weight:600;color:var(--accent);margin-top:2px;">—</div>
             </div>
           </div>
@@ -440,7 +440,7 @@
     .ip-head {
       padding: 18px 20px 13px;
       border-bottom: 1px solid var(--gray-200);
-      background: linear-gradient(135deg, #EBF3FE, #F0FDF4);
+      background: linear-gradient(135deg, #FFF0EB, #EBF3FE);
       flex-shrink: 0;
     }
     .ip-head-top {
@@ -454,9 +454,9 @@
     }
     .ip-title-icon {
       width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
-      background: linear-gradient(135deg, #1A73E8, #4A9DF5);
+      background: linear-gradient(135deg, #f59e0b, #ea580c);
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px; box-shadow: 0 2px 8px rgba(26,115,232,.3);
+      font-size: 18px; box-shadow: 0 2px 8px rgba(245,158,11,.3);
     }
     .ip-close {
       background: var(--gray-100); border: 1px solid var(--gray-200);
@@ -520,10 +520,10 @@
 
   <script>
     /* ════════════════════════════
-       내일 이슈 팝업 설정
+       오늘 이슈 팝업 설정
     ════════════════════════════ */
     var ISSUE_API   = "https://script.google.com/macros/s/AKfycbz6PQIGfl2l_P7KSBKQkuPLLPoHt-tLx-ZwcPlYUxNQj39oROys5MW4tObDrNhSQhew/exec";
-    var DISMISS_KEY = "tomorrowPopupDismiss_v1"; // 내일 이슈 전용 키
+    var DISMISS_KEY = "todayPopupDismiss_v1"; // 오늘 이슈 전용 키
     var KD          = ["일","월","화","수","목","금","토"];
     var _ipTimer    = null;
 
@@ -576,9 +576,9 @@
     });
 
     /* 팝업 표시 */
-    function showIssuePopup(issues, tomorrow) {
-      document.getElementById("ip-subtitle").textContent = fmtKor(tomorrow) + " 이슈";
-      document.getElementById("ip-date").textContent = "내일 (" + fmtKor(tomorrow) + ") 예정된 이슈입니다.";
+    function showIssuePopup(issues, today) {
+      document.getElementById("ip-subtitle").textContent = fmtKor(today) + " 이슈";
+      document.getElementById("ip-date").textContent = fmtKor(today) + " 오늘의 이슈입니다.";
       document.getElementById("ip-dismiss-cb").checked = false;
 
       var html = issues.map(function(iss) {
@@ -594,10 +594,9 @@
       popup.style.display = "flex";
     }
 
-    /* JSONP 방식으로 내일 이슈 로드 */
-    function loadTomorrowIssues() {
-      var today    = getToday();
-      var tomorrow = getTomorrow();
+    /* JSONP 방식으로 오늘 이슈 로드 */
+    function loadTodayIssues() {
+      var today = getToday();
 
       /* 오늘 이미 닫은 경우 표시 안 함 */
       try {
@@ -618,12 +617,12 @@
         delete window[cbName];
 
         if (data && data.ok && Array.isArray(data.issues)) {
-          /* 내일 날짜 이슈만 필터 */
-          var tomorrowIssues = data.issues.filter(function(i) {
-            return i.date === tomorrow;
+          /* 오늘 날짜 이슈만 필터 */
+          var todayIssues = data.issues.filter(function(i) {
+            return i.date === today;
           });
-          if (tomorrowIssues.length > 0) {
-            showIssuePopup(tomorrowIssues, tomorrow);
+          if (todayIssues.length > 0) {
+            showIssuePopup(todayIssues, today);
           }
         }
         /* 이슈 없으면 팝업 미표시 — 조용히 종료 */
@@ -649,7 +648,7 @@
 
     /* 페이지 로드 시 실행 */
     window.addEventListener("DOMContentLoaded", function() {
-      loadTomorrowIssues();
+      loadTodayIssues();
     });
   </script>
 
