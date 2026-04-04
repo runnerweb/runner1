@@ -542,7 +542,7 @@ var KD = ["일","월","화","수","목","금","토"];
    초기화
 ════════════════════════ */
 window.addEventListener("DOMContentLoaded", function() {
-  var now = new Date(); now.setDate(now.getDate() + 1);
+  var now = new Date();
   TODAY = toDS(now);
   document.getElementById("hd-today").textContent = fmtKor(TODAY);
   fetchIssues();
@@ -725,7 +725,7 @@ function renderAll() {
     html += "<div class='ic-date-bar"+(isToday?" is-today":"")+"'>" +
       "<span class='ic-date'>"+date+"</span>" +
       "<span class='ic-dow "+dowCls+"'>"+dowStr+"요일</span>" +
-      (isToday ? "<span class='ic-today-badge'>오늘</span>" : "") +
+      (isToday ? "<span class='ic-today-badge'>PDD</span>" : "") +
       "<span class='ic-cnt'>"+items.length+"건</span>" +
     "</div>";
 
