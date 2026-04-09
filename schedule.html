@@ -797,6 +797,94 @@ td.sc.w1:last-child, td.sc.w1:nth-child(9) { border-right: 2px solid var(--borde
   margin-left: 12px;
 }
 
+/* ── 스케줄 변경 알림 팝업 ── */
+#change-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 7000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.change-box {
+  background: var(--surface);
+  border-radius: 18px;
+  width: 100%; max-width: 420px;
+  max-height: 85vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 12px 48px rgba(0,0,0,.28);
+  overflow: hidden;
+  animation: _slideUp .25s ease;
+}
+@keyframes _slideUp { from { transform: translateY(30px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+.change-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 18px 20px 14px;
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  flex-shrink: 0;
+}
+.change-header-icon { font-size: 24px; }
+.change-header-text { flex: 1; }
+.change-header-title { font-size: 15px; font-weight: 800; color: #fff; }
+.change-header-sub   { font-size: 11px; color: rgba(255,255,255,.8); margin-top: 2px; }
+.change-body {
+  flex: 1; overflow-y: auto;
+  padding: 14px 18px;
+}
+.change-camp-section { margin-bottom: 14px; }
+.change-camp-title {
+  font-size: 11px; font-weight: 700; color: var(--text2);
+  letter-spacing: .5px; text-transform: uppercase;
+  margin-bottom: 8px; padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.change-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 9px 10px; margin-bottom: 5px;
+  background: rgba(220,38,38,.04);
+  border: 1px solid rgba(220,38,38,.12);
+  border-radius: 10px;
+}
+.change-row-date {
+  font-size: 12px; font-weight: 700;
+  font-family: "JetBrains Mono", monospace;
+  color: var(--accent); flex-shrink: 0; min-width: 52px;
+}
+.change-row-info { flex: 1; }
+.change-row-name { font-size: 13px; font-weight: 700; color: var(--text); }
+.change-row-val {
+  margin-top: 3px;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px;
+}
+.change-val-old { color: var(--red); text-decoration: line-through; opacity: .7; }
+.change-val-arrow { color: var(--text3); font-size: 10px; }
+.change-val-new { color: var(--green); font-weight: 700; }
+.change-row-ts { font-size: 10px; color: var(--text3); margin-top: 2px; }
+.change-footer {
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 8px; flex-shrink: 0;
+}
+.change-confirm-btn {
+  flex: 1;
+  background: var(--red); color: #fff;
+  border: none; border-radius: 10px;
+  padding: 11px;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: "Noto Sans KR", sans-serif;
+  transition: opacity .15s;
+}
+.change-confirm-btn:hover { opacity: .88; }
+.change-later-btn {
+  background: var(--surface2); color: var(--text2);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 11px 16px;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: "Noto Sans KR", sans-serif;
+  transition: background .15s;
+}
+.change-later-btn:hover { background: var(--border); }
+
 </style>
 </head>
 <body>
@@ -920,6 +1008,24 @@ td.sc.w1:last-child, td.sc.w1:nth-child(9) { border-right: 2px solid var(--borde
       <div id="hist-weeks"></div>
     </div>
     <div id="hist-loading" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ════ 스케줄 변경 알림 모달 ════ -->
+<div id="change-modal" style="display:none">
+  <div class="change-box">
+    <div class="change-header">
+      <span class="change-header-icon">📢</span>
+      <div class="change-header-text">
+        <div class="change-header-title">스케줄 변경 안내</div>
+        <div class="change-header-sub" id="change-header-sub">2주차 스케줄이 변경되었습니다</div>
+      </div>
+    </div>
+    <div class="change-body" id="change-body"></div>
+    <div class="change-footer">
+      <button class="change-later-btn" onclick="closeChangeLater()">나중에</button>
+      <button class="change-confirm-btn" onclick="confirmChanges()">✅ 확인했습니다</button>
+    </div>
   </div>
 </div>
 
@@ -1441,6 +1547,7 @@ function showCamp(camp) {
   requestAnimationFrame(function() {
     fixStickyHeads();
   });
+  checkScheduleChanges(camp);
 }
 
 function fixStickyHeads() {
@@ -1961,6 +2068,101 @@ function renderLocBody(campName, isBackup) {
 
 function closeLocModal() {
   document.getElementById("loc-modal").style.display = "none";
+}
+
+/* ═══════════════════════════════════════
+   스케줄 변경 알림
+═══════════════════════════════════════ */
+var CHANGE_READ_KEY = "changeRead_v1";
+
+function checkScheduleChanges(camp) {
+  if (!camp) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", API_URL + "?action=getChanges&camp=" + encodeURIComponent(camp), true);
+  xhr.timeout = 10000;
+  xhr.onload = function() {
+    try {
+      var res = JSON.parse(xhr.responseText);
+      if (!res.ok || !res.changes || !res.changes.length) return;
+      var readSet = getReadSet();
+      var unread = res.changes.filter(function(c) {
+        return !readSet[changeKey(c)];
+      });
+      if (!unread.length) return;
+      renderChangeModal(camp, unread);
+    } catch(e) {}
+  };
+  xhr.onerror = xhr.ontimeout = function() {};
+  xhr.send();
+}
+
+function changeKey(c) {
+  return c.name + "|" + c.ds + "|" + c.newVal;
+}
+
+function getReadSet() {
+  try {
+    var raw = localStorage.getItem(CHANGE_READ_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+
+function markAsRead(changes) {
+  var readSet = getReadSet();
+  changes.forEach(function(c) { readSet[changeKey(c)] = true; });
+  try { localStorage.setItem(CHANGE_READ_KEY, JSON.stringify(readSet)); } catch(e) {}
+}
+
+function renderChangeModal(camp, changes) {
+  var KD2 = ["일","월","화","수","목","금","토"];
+  var body = document.getElementById("change-body");
+  var sub  = document.getElementById("change-header-sub");
+  sub.textContent = camp + " 2주차 스케줄이 변경되었습니다";
+
+  var byDate = {};
+  changes.forEach(function(c) {
+    if (!byDate[c.ds]) byDate[c.ds] = [];
+    byDate[c.ds].push(c);
+  });
+
+  var dates = Object.keys(byDate).sort();
+  var html = "";
+  dates.forEach(function(ds) {
+    var d   = new Date(ds + "T00:00:00");
+    var dow = KD2[d.getDay()];
+    var lbl = (d.getMonth()+1) + "/" + d.getDate() + " (" + dow + ")";
+    html += "<div class='change-camp-section'>";
+    html += "<div class='change-camp-title'>📅 " + lbl + "</div>";
+    byDate[ds].forEach(function(c) {
+      html += "<div class='change-row'>" +
+        "<div class='change-row-info'>" +
+          "<div class='change-row-name'>" + c.name + "</div>" +
+          "<div class='change-row-val'>" +
+            "<span class='change-val-old'>" + (c.oldVal || "미정") + "</span>" +
+            "<span class='change-val-arrow'>→</span>" +
+            "<span class='change-val-new'>" + (c.newVal || "미정") + "</span>" +
+          "</div>" +
+          "<div class='change-row-ts'>" + (c.ts || "") + " 변경</div>" +
+        "</div>" +
+      "</div>";
+    });
+    html += "</div>";
+  });
+
+  body.innerHTML = html;
+  document.getElementById("change-modal")._changes = changes;
+  document.getElementById("change-modal").style.display = "flex";
+}
+
+function confirmChanges() {
+  var modal = document.getElementById("change-modal");
+  var changes = modal._changes || [];
+  markAsRead(changes);
+  modal.style.display = "none";
+}
+
+function closeChangeLater() {
+  document.getElementById("change-modal").style.display = "none";
 }
 
 </script>
